@@ -2335,7 +2335,38 @@ function goToBanner(idx) {
   document.getElementById('banner-track').style.transform = `translateX(-${bannerIdx * 100}%)`;
   document.querySelectorAll('.banner-dot').forEach((d, i) => d.classList.toggle('is-active', i === bannerIdx));
   resetBannerTimer();
+  trackBannerView();
 }
+
+// ── 상단 탑배너 추적: 노출(view_promotion) / 클릭(select_promotion) ──
+const bannerViewed = new Set();   // 슬라이드별 페이지 로드당 1회만 노출 집계
+let heroVisible = false;
+function bannerParams(slide) {
+  return {
+    promotion_id: 'top-banner-' + slide.dataset.bannerId,
+    promotion_name: slide.dataset.bannerTitle,
+    creative_slot: slide.dataset.bannerId,
+    location_id: 'top_banner'
+  };
+}
+function trackBannerView() {
+  if (!heroVisible || bannerViewed.has(bannerIdx)) return;
+  const slide = document.querySelectorAll('.banner-slide')[bannerIdx];
+  if (!slide) return;
+  bannerViewed.add(bannerIdx);
+  trackEvent('view_promotion', bannerParams(slide));
+}
+if ('IntersectionObserver' in window) {
+  new IntersectionObserver(entries => {
+    heroVisible = entries[0].isIntersecting;
+    trackBannerView();
+  }, { threshold: 0.5 }).observe(document.getElementById('hero'));
+}
+document.addEventListener('click', e => {
+  const cta = e.target.closest('.banner-cta');
+  const slide = cta && cta.closest('.banner-slide');
+  if (slide) trackEvent('select_promotion', bannerParams(slide));
+}, true);
 
 function moveBanner(dir) {
   goToBanner(bannerIdx + dir);
