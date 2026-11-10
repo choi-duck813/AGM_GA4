@@ -419,13 +419,6 @@
     .banner-dot.is-active::after { background: white; transform: translate(-50%,-50%) scale(1.3); }
   }
   </style>
-  <!-- Google Tag Manager -->
-  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-  })(window,document,'script','dataLayer','GTM-KZL823C6');</script>
-  <!-- End Google Tag Manager -->
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZWX0LW6HBL"></script>
   <script>
@@ -436,10 +429,6 @@
   </script>
 </head>
 <body>
-<!-- Google Tag Manager (noscript) -->
-<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KZL823C6"
-height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
-<!-- End Google Tag Manager (noscript) -->
 
 <!-- ══ HEADER ══ -->
 <header id="site-header">
@@ -452,7 +441,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <nav class="header-nav" id="header-nav">
       <div id="auth-area-logged-out">
         <button class="btn-header" id="btn-login" onclick="openLoginModal()">로그인</button>
-        <button class="btn-header" id="btn-signup" onclick="openSignupModal()">회원가입</button>
+        <button class="btn-header" id="btn-signup" onclick="openSignupModal('header')">회원가입</button>
       </div>
       <div class="user-menu-wrap" id="auth-area-logged-in" style="display:none;">
         <button class="btn-header" id="btn-user-menu" onclick="toggleUserMenu()"><span id="user-display-name">회원</span>님 ▾</button>
@@ -496,7 +485,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <button class="btn-social btn-social-kakao" id="btn-social-kakao" data-social-provider="kakao" onclick="doSocialLogin('kakao')">카카오로 시작하기</button>
       <button class="btn-social btn-social-naver" id="btn-social-naver" data-social-provider="naver" onclick="doSocialLogin('naver')">네이버로 시작하기</button>
     </div>
-    <p class="modal-switch">아직 회원이 아니신가요? <button id="btn-switch-to-signup" onclick="openSignupModal()">회원가입</button></p>
+    <p class="modal-switch">아직 회원이 아니신가요? <button id="btn-switch-to-signup" onclick="openSignupModal('login_modal')">회원가입</button></p>
   </div>
 </div>
 
@@ -1054,7 +1043,8 @@ function showToast(msg) {
 // AUTH (localStorage 간이 구현)
 // ────────────────────────────────
 function openLoginModal()  { closeModals(); document.getElementById('modal-login').classList.add('is-open'); }
-function openSignupModal() { closeModals(); document.getElementById('modal-signup').classList.add('is-open'); }
+let signupSource = 'header';
+function openSignupModal(source) { signupSource = source || 'header'; closeModals(); document.getElementById('modal-signup').classList.add('is-open'); }
 function closeModals()     { document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('is-open')); }
 
 function doLogin(e) {
@@ -1071,6 +1061,7 @@ function doSignup(e) {
   currentUser = { name: name || '회원', email, provider: 'email',
                   marketingAgreed: document.getElementById('signup-agree-marketing').checked };
   saveUser(); renderAuthState(); closeModals();
+  trackEvent('sign_up', { method: 'email', signup_source: signupSource });
   showToast('🎁 가입 완료! 5,000원 쿠폰(WELCOME5000)이 지급되었습니다');
 }
 function doSocialLogin(provider) {
@@ -1187,7 +1178,14 @@ function quickCategory(cat) {
   filterCategory(cat);
 }
 function handlePromo(promoId) {
-  if (promoId === 'signup-coupon') { currentUser ? showToast('이미 로그인되어 있습니다') : openSignupModal(); }
+  if (promoId === 'signup-coupon') {
+    trackEvent('promotion_signup', {
+      promotion_name: '신규가입 5000원 쿠폰',
+      promotion_id: 'signup-coupon',
+      login_status: currentUser ? 'logged_in' : 'logged_out'
+    });
+  }
+  if (promoId === 'signup-coupon') { currentUser ? showToast('이미 로그인되어 있습니다') : openSignupModal('promo_banner'); }
   else showToast('🚚 3만원 이상 주문 시 배송비가 무료입니다');
 }
 function handleEvent(eventId, category) {
